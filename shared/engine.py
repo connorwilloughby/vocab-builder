@@ -1,4 +1,5 @@
 import pandas as pd
+from datetime import datetime
 import random
 
 from shared.generic import loose_string_equal
@@ -29,13 +30,57 @@ class ProblemState:
         return self
 
 
-class GameState:
+class ProgressState:
+    """
+    Will track long term learning progress.
+
+    Should outlive a GameSessionState
+    """
+
+    def __init__(self) -> None:
+        self.path = "./data/progress/answers.csv"
+
+        # restore the current progress
+        self.progress_frame = self.get_existing_progress()
+
+    def update_progress(self, target_word: str, translated: bool):
+        """
+        Will write a new answer into the history tracking csv
+        """
+
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        # create a new row
+        new_data = pd.DataFrame(
+            {
+                "time": [current_time],
+                "target_word": [target_word],
+                "result": [translated],
+            }
+        )
+
+        # add params to frame
+        self.progress_frame = pd.concat(
+            [self.progress_frame, new_data], ignore_index=True
+        )
+
+        # save it to disk
+        self.progress_frame.to_csv(self.path, index=False)
+
+    def get_existing_progress(self):
+        """
+        Pull the CSV data from `/data`
+        """
+
+        return pd.read_csv(self.path)
+
+
+class GameSessionState:
     """
     Class used to track the state of various mechanics and interactions
     """
 
     def __init__(self) -> None:
-
         self.streak = 0
         self.high_score = 0
         self.low_score = 0
@@ -45,7 +90,6 @@ class GameState:
         self.words = 0
 
     def set_words(self, set_size):
-
         self.words = set_size
 
     def correct_answer(self):
@@ -69,19 +113,18 @@ class GameState:
         self.low_score += 1
 
     def next_question(self, translation, answer, previous_correct: bool):
-
         self.last_translation = translation
         self.last_answer = answer
         self.previous_correct = previous_correct
 
 
 class GameEngine:
-
     def __init__(self) -> None:
-
-        self.game_state = GameState()
+        self.game_state = GameSessionState()
 
         self.problem = ProblemState()
+
+        self.progress = ProgressState()
 
         # check the desired game mode
         self.mode = Interface(self.game_state, self.problem).onek_question()
@@ -113,7 +156,6 @@ class GameEngine:
 
         # Check if they want to play the 1k mode
         if loose_string_equal(self.mode, "y"):
-
             mode_config["1k_version"] = True
             mode_config["difficulty"] = int(
                 input("how many words would you like? (0-n): ")
@@ -189,7 +231,6 @@ class GameEngine:
 
         # HACK: work out how to handle the game session
         for _ in range(1, 1_000_000):
-
             # get the first question
             problem = self.setup_problem_state()
 
@@ -199,8 +240,17 @@ class GameEngine:
             if loose_string_equal(response, problem.solution):
                 # user answered correctly
                 self.game_state.next_question(problem.problem, problem.solution, True)
+                self.progress.update_progress(
+                    problem.problem,
+                    True,
+                )
+
                 self.game_state.correct_answer()
             else:
                 # user is an idiot
                 self.game_state.next_question(problem.problem, problem.solution, False)
+                self.progress.update_progress(
+                    problem.problem,
+                    False,
+                )
                 self.game_state.incorrect_answer()
