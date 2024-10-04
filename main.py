@@ -1,5 +1,4 @@
 from shared.engine import GameEngine
-from shared.interface import Interface
 
 
 def main():
@@ -7,9 +6,8 @@ def main():
     Do everything
     """
 
-    engine = GameEngine()
+    GameEngine()
 
 
 if __name__ == "__main__":
-
     main()
