@@ -10,10 +10,10 @@
       "request": "launch",
       "program": "${file}",
       "cwd": "${workspaceFolder}",
-      "console": "integratedTerminal",
-      "env": {
-        "PYTHONPATH": "${workspaceRoot}/shared/;"
-      }
+      "console": "integratedTerminal"
+      // "env": {
+      //   "PYTHONPATH": "${workspaceRoot}/shared/;"
+      // }
     }
   ]
 }
