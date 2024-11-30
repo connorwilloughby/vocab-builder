@@ -1,23 +1,25 @@
 from engine import ProgressState
-
+import pandas as pd
 
 class AnalysisEngine(ProgressState):
     """
     Used to get insight about user performance from historical performance.
 
-    @extends ProgressState
-
-    @returns probably fuck all
+    @ extends ProgressState
     """
 
     def __init__(self) -> None:
+
+        # get historical user answers
+        self.user_answers_df = pd.read_csv("data/progress/answers.csv")
+
         # inherit from parent
         super().__init__()
 
     def get_success_rates(self):
-        historical_frame = self.progress_frame
+        word_success_rate_frame = self.user_answers_df.groupby('target_word')['result'].mean()
 
-        word_success_rate_frame = historical_frame.groupby('target_word')['result'].mean() * 100
+        word_success_rate_frame.sort_values(axis=0, inplace=True, ascending=[True])
 
         return word_success_rate_frame
 
